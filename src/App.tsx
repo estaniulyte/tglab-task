@@ -26,7 +26,6 @@ function App() {
     size,
     isLoadingMore,
     hasMore,
-    isValidating,
   } = usePaginatedData<Article>('articles', query);
 
   const handleSearchInputChange = (
@@ -71,12 +70,13 @@ function App() {
       threshold: 0,
     };
     const observer = new IntersectionObserver(handleObserver, option);
-    if (loader.current) {
-      observer.observe(loader.current);
+    const currentLoader = loader.current;
+    if (currentLoader) {
+      observer.observe(currentLoader);
     }
     return () => {
-      if (loader.current) {
-        observer.unobserve(loader.current);
+      if (currentLoader) {
+        observer.unobserve(currentLoader);
       }
     };
   }, [handleObserver]);
@@ -93,8 +93,14 @@ function App() {
           onSearchSubmit={handleSearchSubmit}
           onClearSearch={handleClearSearch}
         />
-        {isValidating && !isLoadingMore && <p>Loading...</p>}
-        <ArticlesGrid articles={articles} />
+        {isLoadingMore ? (
+          <p>Loading...</p>
+        ) : !articles.length ? (
+          <p>No articles found</p>
+        ) : (
+          <></>
+        )}
+        {articles.length ? <ArticlesGrid articles={articles} /> : <></>}
         <div ref={loader}>
           {isLoadingMore && hasMore && <p>Loading more...</p>}
         </div>

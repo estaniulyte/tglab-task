@@ -24,16 +24,14 @@ const usePaginatedData = <T>(endpoint: string, search?: string) => {
     );
 
   const results: T[] = data ? data.flatMap((page) => page.results) : [];
-  const isLoadingInitialData = !data && !error;
   const isLoadingMore =
-    isLoadingInitialData ||
-    (size > 0 && data && typeof data[size - 1] === 'undefined');
+    isLoading || (size > 0 && data && typeof data[size - 1] === 'undefined');
   const hasMore = data ? data[data.length - 1]?.next !== null : false;
 
   return {
     results,
     isLoadingMore,
-    isLoadingInitialData,
+    isLoading,
     hasMore,
     error,
     mutate,
