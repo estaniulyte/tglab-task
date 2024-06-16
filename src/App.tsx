@@ -1,26 +1,105 @@
-import React from 'react';
-import logo from './logo.svg';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import './App.css';
+import { Article } from './types/article';
+import usePaginatedData from './utils/usePaginatedData';
+import ArticlesGrid from './components/ArticlesGrid';
+import styled from 'styled-components';
+import SearchForm from './components/SearchForm';
+
+const MainContainer = styled.div`
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  margin: 15px 0;
+  padding: 0;
+  color: white;
+`;
 
 function App() {
+  const [search, setSearch] = useState('');
+  const [query, setQuery] = useState('');
+
+  const {
+    results: articles,
+    setSize,
+    size,
+    isLoadingMore,
+    hasMore,
+    isValidating,
+  } = usePaginatedData<Article>('articles', query);
+
+  const handleSearchInputChange = (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    setSearch(event.target.value);
+  };
+
+  const handleSearchSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setQuery(search);
+  };
+
+  const handleClearSearch = () => {
+    setSearch('');
+    setQuery('');
+    setSize(1);
+  };
+
+  useEffect(() => {
+    if (query) {
+      setSize(1);
+    }
+  }, [query, setSize]);
+
+  const loader = useRef<HTMLDivElement | null>(null);
+
+  const handleObserver = useCallback(
+    (entries: IntersectionObserverEntry[]) => {
+      const target = entries[0];
+      if (target.isIntersecting && hasMore && !isLoadingMore) {
+        setSize(size + 1);
+      }
+    },
+    [setSize, size, hasMore, isLoadingMore]
+  );
+
+  useEffect(() => {
+    const option = {
+      root: null,
+      rootMargin: '20px',
+      threshold: 0,
+    };
+    const observer = new IntersectionObserver(handleObserver, option);
+    if (loader.current) {
+      observer.observe(loader.current);
+    }
+    return () => {
+      if (loader.current) {
+        observer.unobserve(loader.current);
+      }
+    };
+  }, [handleObserver]);
+
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.tsx</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
+    <MainContainer>
+      <header>
+        <h1>TGLab Task - Evelina Staniulytė</h1>
       </header>
-    </div>
+      <main>
+        <SearchForm
+          search={search}
+          onSearchChange={handleSearchInputChange}
+          onSearchSubmit={handleSearchSubmit}
+          onClearSearch={handleClearSearch}
+        />
+        {isValidating && !isLoadingMore && <p>Loading...</p>}
+        <ArticlesGrid articles={articles} />
+        <div ref={loader}>
+          {isLoadingMore && hasMore && <p>Loading more...</p>}
+        </div>
+      </main>
+    </MainContainer>
   );
 }
-
 export default App;
